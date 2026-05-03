@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color: #111318;
+    background-color: #f7f8fa;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 18% -10%, rgba(17, 19, 24, 0.1), transparent 35%),
+      radial-gradient(circle at 100% 20%, rgba(219, 167, 92, 0.2), transparent 30%),
+      #f7f8fa;
+    color: #111318;
+    font-family: 'Manrope', system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .site-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .ui-button {
+    @apply rounded-full shadow-sm transition-all duration-300 ease-out hover:scale-[1.03] hover:shadow-lg active:scale-[0.99];
+  }
+
+  .ui-button-primary {
+    @apply ui-button bg-slate-950 text-white hover:bg-black;
+  }
+
+  .ui-button-light {
+    @apply ui-button bg-white text-slate-950 hover:bg-slate-100;
+  }
+
+  .ui-button-outline {
+    @apply ui-button border border-slate-300 bg-white text-slate-900 hover:border-slate-400 hover:bg-slate-50;
+  }
+
+  .ui-card-lift {
+    @apply transition-all duration-300 ease-out shadow-lg shadow-slate-900/10 hover:-translate-y-1 hover:scale-105 hover:shadow-xl;
+  }
+
+  .ui-image-zoom {
+    @apply transition-transform duration-300 ease-out group-hover:scale-105;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .section-heading {
+    @apply font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl;
+  }
+}
