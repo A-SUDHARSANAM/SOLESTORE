@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { FiMapPin } from 'react-icons/fi'
 import { useCart } from '../context/CartContext'
+import { storeInfo } from '../config/store'
 import { formatCurrency } from '../lib/currency'
 import { saveOrder } from '../lib/orders'
 
@@ -132,6 +134,17 @@ export default function Checkout() {
           <div>
             <div className="sticky top-24 rounded-lg bg-white p-6 shadow-md">
               <h2 className="mb-4 text-xl font-semibold">Order Summary</h2>
+
+              <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                <div className="flex items-start gap-3">
+                  <FiMapPin className="mt-0.5 h-4 w-4 text-amber-600" />
+                  <div>
+                    <p className="font-semibold text-slate-900">{storeInfo.name}</p>
+                    <p className="mt-1 text-slate-600">Delivery reference: {storeInfo.address}</p>
+                    <p className="mt-1 text-slate-500">Pincode: {storeInfo.pincode}</p>
+                  </div>
+                </div>
+              </div>
 
               <div className="mb-4 max-h-64 space-y-3 overflow-y-auto">
                 {cartItems.map((item) => (

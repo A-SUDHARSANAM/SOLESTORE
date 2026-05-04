@@ -1,9 +1,12 @@
 import { motion, useScroll, useSpring, useTransform } from 'framer-motion'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FiMapPin, FiPhoneCall } from 'react-icons/fi'
 import ProductCard from '../components/ProductCard'
+import { storeInfo } from '../config/store'
 import { useProducts } from '../context/ProductContext'
 import { formatCurrency } from '../lib/currency'
+import { REVIEWS_STORAGE_KEY, getReviews } from '../lib/reviews'
 
 const viewportSettings = { once: true, amount: 0.25 }
 
@@ -153,6 +156,9 @@ function Home() {
     .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
     .slice(0, 4)
   const heroProduct = featuredProducts[0] ?? products[0]
+  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(
+    `${storeInfo.address} ${storeInfo.pincode}`,
+  )}&output=embed`
 
   const { scrollYProgress: heroScrollProgress } = useScroll({
     target: heroRef,
@@ -170,6 +176,8 @@ function Home() {
   })
   const heroOverlayOpacity = useTransform(heroScrollProgress, [0, 1], [1, 0.9])
   const recentlyViewedProducts = getRecentlyViewedProducts(4)
+  const [activeTestimonial, setActiveTestimonial] = useState(0)
+  const [testimonialItems, setTestimonialItems] = useState([])
 
   const categories = [
     {
@@ -212,26 +220,104 @@ function Home() {
     { name: 'Skechers', note: 'Everyday ease', value: '10 drops' },
   ]
 
-  const testimonials = [
+  const buildTestimonialItems = () => {
+    const allReviews = getReviews()
+    const flattened = Object.entries(allReviews).flatMap(([productId, reviews]) => {
+      const product = products.find((item) => String(item.id) === String(productId))
+      const productName = product?.name ?? 'Selected product'
+
+      if (!Array.isArray(reviews)) return []
+
+      return reviews
+        .filter((review) => review?.comment && Number(review?.rating) >= 4)
+        .map((review, index) => ({
+          id: `${productId}-${review.date ?? 'na'}-${index}`,
+          name: review.user ?? 'Guest',
+          role: 'Verified Buyer',
+          product: productName,
+          quote: review.comment,
+          rating: Number(review.rating || 0),
+          verified: review.verified !== false,
+          date: review.date ?? '',
+        }))
+    })
+
+    return flattened
+      .sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating
+        return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+      })
+      .slice(0, 6)
+  }
+
+  useEffect(() => {
+    setTestimonialItems(buildTestimonialItems())
+  }, [products])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const handleReviewUpdate = () => {
+      setTestimonialItems(buildTestimonialItems())
+    }
+    const handleStorage = (event) => {
+      if (event.key === REVIEWS_STORAGE_KEY) {
+        handleReviewUpdate()
+      }
+    }
+
+    window.addEventListener('reviews:updated', handleReviewUpdate)
+    window.addEventListener('storage', handleStorage)
+
+    return () => {
+      window.removeEventListener('reviews:updated', handleReviewUpdate)
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [products])
+
+  const fallbackTestimonials = [
     {
-      name: 'Riya Sharma',
-      role: 'Creative Lead',
-      quote:
-        'The landing experience feels premium, but the bigger win is how quickly I can jump from inspiration to checkout.',
-    },
-    {
-      name: 'Arjun Mehta',
-      role: 'Fitness Coach',
-      quote:
-        'I found the right training pair in minutes. The sections make browsing feel curated instead of overwhelming.',
-    },
-    {
-      name: 'Sana Kapoor',
-      role: 'Style Consultant',
-      quote:
-        'It has the polish of a modern brand site with enough clarity that customers always know where to go next.',
+      id: 'empty-reviews',
+      name: storeInfo.name,
+      role: 'Customer Reviews',
+      product: heroProduct?.name ?? 'Signature Pair',
+      quote: 'No reviews yet. Be the first to review!',
+      verified: false,
+      rating: 0,
     },
   ]
+
+  const displayTestimonials = testimonialItems.length
+    ? testimonialItems
+    : fallbackTestimonials
+
+  const totalTestimonials = displayTestimonials.length
+
+  useEffect(() => {
+    if (totalTestimonials <= 1) return undefined
+
+    const intervalId = window.setInterval(() => {
+      setActiveTestimonial((prev) => (prev + 1) % totalTestimonials)
+    }, 3500)
+
+    return () => window.clearInterval(intervalId)
+  }, [totalTestimonials])
+
+  useEffect(() => {
+    if (activeTestimonial >= totalTestimonials) {
+      setActiveTestimonial(0)
+    }
+  }, [activeTestimonial, totalTestimonials])
+
+  const handlePrevTestimonial = () => {
+    if (totalTestimonials <= 1) return
+    setActiveTestimonial((prev) => (prev - 1 + totalTestimonials) % totalTestimonials)
+  }
+
+  const handleNextTestimonial = () => {
+    if (totalTestimonials <= 1) return
+    setActiveTestimonial((prev) => (prev + 1) % totalTestimonials)
+  }
 
   return (
     <div id="top" className="bg-transparent">
@@ -533,6 +619,60 @@ function Home() {
         </div>
       </section>
 
+      <section id="contact" className="scroll-mt-28 bg-slate-50 py-20 sm:py-24">
+        <div className="site-shell">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+            <div className="space-y-8">
+              <SectionIntro
+                eyebrow="Contact Us"
+                title={`Visit ${storeInfo.name} or call for assistance.`}
+                description="Reach our team for sizing, delivery details, or pickup guidance."
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-premium">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                      <FiMapPin className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Store address</p>
+                      <p className="mt-2 text-sm text-slate-600">{storeInfo.address}</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-700">Pincode: {storeInfo.pincode}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-premium">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                      <FiPhoneCall className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Call us</p>
+                      <a href={`tel:${storeInfo.phone}`} className="mt-2 block text-sm font-medium text-slate-600 transition hover:text-slate-900">
+                        {storeInfo.phone}
+                      </a>
+                      <a href={`tel:${storeInfo.alternate}`} className="mt-1 block text-sm font-medium text-slate-600 transition hover:text-slate-900">
+                        {storeInfo.alternate}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-premium">
+              <iframe
+                title={`${storeInfo.name} map`}
+                src={mapSrc}
+                className="h-80 w-full sm:h-[22rem] lg:h-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="testimonials" className="scroll-mt-28 bg-white py-20 sm:py-24">
         <div className="site-shell">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -549,37 +689,105 @@ function Home() {
             </a>
           </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={viewportSettings}
-            variants={staggerGrid}
-            className="mt-12 grid gap-6 lg:grid-cols-3"
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.article key={testimonial.name} variants={softReveal} className="rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,_#ffffff,_#f8fafc)] p-7 shadow-[0_22px_60px_-40px_rgba(15,23,42,0.45)]">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-white">
-                    0{index + 1}
-                  </span>
-                  <div className="flex gap-1 text-amber-500">
-                    {Array.from({ length: 5 }).map((_, starIndex) => (
-                      <span key={starIndex}>*</span>
-                    ))}
+          <div className="relative mt-12">
+            <button
+              type="button"
+              onClick={handlePrevTestimonial}
+              className="absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-bold text-slate-700 shadow-md transition hover:scale-[1.03] hover:bg-slate-50 sm:flex"
+              aria-label="Previous testimonial"
+            >
+              &#8249;
+            </button>
+            <button
+              type="button"
+              onClick={handleNextTestimonial}
+              className="absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-bold text-slate-700 shadow-md transition hover:scale-[1.03] hover:bg-slate-50 sm:flex"
+              aria-label="Next testimonial"
+            >
+              &#8250;
+            </button>
+
+            <div className="overflow-hidden">
+              <div
+                className="flex transition-transform duration-700 ease-out"
+                style={{ transform: `translateX(-${activeTestimonial * 100}%)` }}
+              >
+                {displayTestimonials.map((testimonial, index) => (
+                  <div key={testimonial.id ?? `${testimonial.name}-${index}`} className="w-full shrink-0 px-1 sm:px-8">
+                    <motion.article
+                      initial="hidden"
+                      whileInView="show"
+                      viewport={viewportSettings}
+                      variants={softReveal}
+                      className="group rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,_#ffffff,_#f8fafc)] p-7 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-white">
+                          0{index + 1}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {testimonial.verified && (
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">
+                              Verified Purchase
+                            </span>
+                          )}
+                          {testimonial.rating > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex gap-1 text-amber-500">
+                                {Array.from({ length: 5 }).map((_, starIndex) => (
+                                  <span key={starIndex}>
+                                    {starIndex < Math.round(testimonial.rating) ? '\u2605' : '\u2606'}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-xs font-semibold text-slate-600">
+                                {testimonial.rating.toFixed(1)}/5
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-500">
+                              No ratings yet
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-6 text-base font-medium leading-8 text-slate-700">
+                        "{testimonial.quote}"
+                      </p>
+                      <div className="mt-8 flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-sm font-bold uppercase tracking-[0.2em] text-white">
+                          {testimonial.name?.slice(0, 2)}
+                        </div>
+                        <div>
+                          <p className="font-display text-xl font-bold text-slate-950">{testimonial.name}</p>
+                          <p className="mt-1 text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
+                            {testimonial.role}
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-amber-700">{testimonial.product}</p>
+                        </div>
+                      </div>
+                    </motion.article>
                   </div>
-                </div>
-                <p className="mt-6 text-base font-medium leading-8 text-slate-700">
-                  "{testimonial.quote}"
-                </p>
-                <div className="mt-8">
-                  <p className="font-display text-xl font-bold text-slate-950">{testimonial.name}</p>
-                  <p className="mt-1 text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-                    {testimonial.role}
-                  </p>
-                </div>
-              </motion.article>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-center gap-2">
+            {displayTestimonials.map((_, index) => (
+              <button
+                key={`testimonial-dot-${index}`}
+                type="button"
+                onClick={() => setActiveTestimonial(index)}
+                className={`h-2.5 w-2.5 rounded-full transition ${
+                  index === activeTestimonial
+                    ? 'bg-slate-900'
+                    : 'bg-slate-300 hover:bg-slate-400'
+                }`}
+                aria-label={`Go to testimonial ${index + 1}`}
+              />
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>

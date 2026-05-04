@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
+import { FiMapPin, FiPhoneCall } from 'react-icons/fi'
+import { storeInfo } from '../config/store'
 import { formatCurrency } from '../lib/currency'
 import { getCurrentOrder } from '../lib/orders'
 
@@ -47,7 +49,7 @@ function OrderSuccess() {
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-600">Order Placed</p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Your order is confirmed</h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Thanks for your purchase. Your order has been saved and your shoes are now on the way to being packed.
+              Thank you for shopping at {storeInfo.name}. Your order has been saved and your shoes are now on the way to being packed.
             </p>
           </div>
 
@@ -82,6 +84,31 @@ function OrderSuccess() {
                   {step}
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+            <h2 className="text-lg font-bold text-emerald-900">Need help with your order?</h2>
+            <div className="mt-4 grid gap-3 text-sm text-emerald-900 sm:grid-cols-2">
+              <div className="flex items-start gap-3">
+                <FiPhoneCall className="mt-0.5 h-4 w-4" />
+                <div>
+                  <p className="font-semibold">Call us</p>
+                  <a href={`tel:${storeInfo.phone}`} className="block text-emerald-900 transition hover:text-emerald-700">
+                    {storeInfo.phone}
+                  </a>
+                  <a href={`tel:${storeInfo.alternate}`} className="block text-emerald-900 transition hover:text-emerald-700">
+                    {storeInfo.alternate}
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <FiMapPin className="mt-0.5 h-4 w-4" />
+                <div>
+                  <p className="font-semibold">Visit the store</p>
+                  <p>{storeInfo.address}</p>
+                </div>
+              </div>
             </div>
           </div>
 

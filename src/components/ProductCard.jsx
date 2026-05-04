@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
+import { useProductReviews } from '../hooks/useProductReviews'
 import fallbackShoe from '../assets/fallback-shoe.svg'
 import { formatCurrency } from '../lib/currency'
 
@@ -10,10 +11,11 @@ function ProductCard({ product }) {
   const { addToCart } = useCart()
   const { isWishlisted, toggleWishlist } = useWishlist()
   const wishlisted = isWishlisted(product.id)
+  const { averageRating, reviewCount } = useProductReviews(product.id)
 
   const originalPrice = product.originalPrice || Math.round(product.price * 1.25)
   const discount = product.discount || 20
-  const rating = product.rating || 4.5
+  const rating = reviewCount ? averageRating : product.rating || 4.5
   const stock = product.stock ?? 10
   const isOutOfStock = stock === 0
   const isLowStock = stock > 0 && stock <= 5
