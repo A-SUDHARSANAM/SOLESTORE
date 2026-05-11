@@ -6,7 +6,8 @@ const STORAGE_KEY = 'sole-cart-v1'
 function getInitialCart() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }
@@ -30,7 +31,8 @@ function CartProvider({ children }) {
       if (event.key !== STORAGE_KEY) return
 
       try {
-        setCartItems(event.newValue ? JSON.parse(event.newValue) : [])
+        const parsed = event.newValue ? JSON.parse(event.newValue) : []
+        setCartItems(Array.isArray(parsed) ? parsed : [])
       } catch {
         setCartItems([])
       }
@@ -83,7 +85,8 @@ function CartProvider({ children }) {
         ...prev,
         {
           ...product,
-          image: product.image || product.images?.[0] || '',
+          imageUrl: product.imageUrl || product.image || product.images?.[0] || '',
+          image: product.imageUrl || product.image || product.images?.[0] || '',
           size,
           quantity: 1,
         },

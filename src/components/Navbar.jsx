@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FiMenu, FiPhoneCall, FiX } from 'react-icons/fi'
+import { FiMenu, FiPhoneCall, FiUser, FiX } from 'react-icons/fi'
 import { useCart } from '../context/CartContext'
+import { useProducts } from '../context/ProductContext'
 import { useWishlist } from '../context/WishlistContext'
-import { storeInfo } from '../config/store'
+import { useStoreSettings } from '../context/StoreSettingsContext'
 
 const links = [
   { to: '/', label: 'Home' },
@@ -16,15 +17,24 @@ const links = [
 
 function Navbar() {
   const { itemCount } = useCart()
-  const { wishlistCount } = useWishlist()
+  const { wishlistIds } = useWishlist()
+  const { products } = useProducts()
+  const { storeSettings } = useStoreSettings()
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const searchQuery = new URLSearchParams(location.search).get('q') ?? ''
-  const [brandPrimary, brandAccentRaw] = storeInfo.name.split('_')
+  const [brandPrimary, brandAccentRaw] = (storeSettings.name || '').split('_')
   const brandAccent = brandAccentRaw ? `_${brandAccentRaw}` : ''
   const brandPrimaryChars = Array.from(brandPrimary)
   const brandAccentChars = Array.from(brandAccent)
+  const wishlistCount = useMemo(() => {
+    if (!products.length || !wishlistIds.length) return 0
+
+    return wishlistIds.filter((wishlistId) =>
+      products.some((product) => String(product.id) === String(wishlistId)),
+    ).length
+  }, [products, wishlistIds])
   const logoContainerMotion = {
     hidden: { opacity: 0, y: -10 },
     show: {
@@ -91,7 +101,7 @@ function Navbar() {
               to="/"
               className="group shrink-0 cursor-pointer font-display text-2xl font-extrabold tracking-[0.14em] text-ink transition-all duration-300 hover:scale-[1.05] hover:drop-shadow-[0_0_16px_rgba(251,146,60,0.6)] sm:text-3xl"
             >
-              <span className="sr-only">{storeInfo.name}</span>
+              <span className="sr-only">{storeSettings.name}</span>
               <motion.span
                 aria-hidden="true"
                 variants={logoContainerMotion}
@@ -153,13 +163,20 @@ function Navbar() {
                   </li>
                 ))}
               </ul>
+              <NavLink
+                to="/admin"
+                className="hidden h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-700 shadow-premium transition hover:bg-slate-50 lg:inline-flex"
+                aria-label="Go to admin dashboard"
+              >
+                <FiUser className="h-4 w-4 text-slate-700" />
+              </NavLink>
               <a
-                href={`tel:${storeInfo.phone}`}
+                href={`tel:${storeSettings.phone}`}
                 className="hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-premium transition hover:bg-slate-50 lg:inline-flex"
-                aria-label={`Call ${storeInfo.name}`}
+                aria-label={`Call ${storeSettings.name}`}
               >
                 <FiPhoneCall className="h-4 w-4 text-amber-600" />
-                {storeInfo.phone}
+                {storeSettings.phone}
               </a>
             </div>
             <button
@@ -208,13 +225,22 @@ function Navbar() {
                 </li>
               ))}
             </ul>
-            <a
-              href={`tel:${storeInfo.phone}`}
+            <NavLink
+              to="/admin"
+              onClick={() => setMenuOpen(false)}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-premium transition hover:bg-slate-50"
-              aria-label={`Call ${storeInfo.name}`}
+              aria-label="Go to admin dashboard"
+            >
+              <FiUser className="h-4 w-4 text-slate-700" />
+              Admin
+            </NavLink>
+            <a
+              href={`tel:${storeSettings.phone}`}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-premium transition hover:bg-slate-50"
+              aria-label={`Call ${storeSettings.name}`}
             >
               <FiPhoneCall className="h-4 w-4 text-amber-600" />
-              {storeInfo.phone}
+              {storeSettings.phone}
             </a>
           </div>
         )}

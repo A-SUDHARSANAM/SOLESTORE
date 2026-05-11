@@ -1,3 +1,6 @@
+import { createOrder } from '../services/orderService'
+import { isFirebaseConfigured } from '../firebase'
+
 const ORDERS_STORAGE_KEY = 'sole-orders-v1'
 const CURRENT_ORDER_STORAGE_KEY = 'sole-current-order-v1'
 
@@ -17,6 +20,11 @@ export function saveOrder(order) {
   const nextOrders = [order, ...getOrders()]
   localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(nextOrders))
   localStorage.setItem(CURRENT_ORDER_STORAGE_KEY, JSON.stringify(order))
+
+  if (isFirebaseConfigured && order?.id) {
+    void createOrder(order).catch(() => {})
+  }
+
   return order
 }
 

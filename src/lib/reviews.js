@@ -1,3 +1,6 @@
+import { isFirebaseConfigured } from '../firebase'
+import { addReview } from '../services/reviewService'
+
 const REVIEWS_STORAGE_KEY = 'sole-reviews-v1'
 
 function safeParse(json, fallback) {
@@ -34,6 +37,18 @@ export function saveReview(productId, review) {
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('reviews:updated', { detail: { productId: key } }))
+  }
+
+  if (isFirebaseConfigured) {
+    void addReview({
+      productId: key,
+      user: review.user,
+      rating: Number(review.rating || 0),
+      comment: review.comment,
+      date: review.date,
+      verified: review.verified !== false,
+      visible: true,
+    }).catch(() => {})
   }
 
   return review

@@ -8,8 +8,10 @@ import { toast } from 'react-hot-toast'
 export default function Wishlist() {
   const { wishlistIds, removeFromWishlist } = useWishlist()
   const { addToCart } = useCart()
-  const { products } = useProducts()
-  const wishlistProducts = products.filter((product) => wishlistIds.includes(product.id))
+  const { products, productsLoading } = useProducts()
+  const wishlistProducts = products.filter((product) =>
+    wishlistIds.some((wishlistId) => String(wishlistId) === String(product.id)),
+  )
 
   const handleMoveToCart = (product) => {
     const added = addToCart(product, null, null, { silent: true })
@@ -26,6 +28,19 @@ export default function Wishlist() {
   const handleRemoveFromWishlist = (product) => {
     removeFromWishlist(product.id)
     toast.success(`${product.name} removed from wishlist`)
+  }
+
+  if (productsLoading && wishlistIds.length > 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8 sm:py-10">
+        <div className="mx-auto max-w-6xl px-4 text-center">
+          <div className="rounded-3xl border border-slate-200 bg-white px-6 py-14 shadow-sm sm:px-10">
+            <div className="mx-auto flex h-12 w-12 animate-spin items-center justify-center rounded-full border-4 border-slate-200 border-t-slate-900" />
+            <p className="mt-4 text-sm font-semibold text-slate-600">Loading your wishlist...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (wishlistProducts.length === 0) {

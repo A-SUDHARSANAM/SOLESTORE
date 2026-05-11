@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiMapPin } from 'react-icons/fi'
 import { useCart } from '../context/CartContext'
-import { storeInfo } from '../config/store'
+import { useStoreSettings } from '../context/StoreSettingsContext'
 import { formatCurrency } from '../lib/currency'
 import { saveOrder } from '../lib/orders'
 
@@ -14,6 +14,7 @@ function createOrderId() {
 export default function Checkout() {
   const navigate = useNavigate()
   const { cartItems, totalPrice, clearCart } = useCart()
+  const { storeSettings } = useStoreSettings()
   const [paymentMethod, setPaymentMethod] = useState('cod')
   const [formData, setFormData] = useState({
     name: '',
@@ -66,7 +67,7 @@ export default function Checkout() {
         totalPrice: grandTotal,
         paymentMethod,
         customer: formData,
-        status: 'Placed',
+        status: 'Pending',
         date: new Date().toLocaleString('en-IN'),
         estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN'),
       }
@@ -139,9 +140,9 @@ export default function Checkout() {
                 <div className="flex items-start gap-3">
                   <FiMapPin className="mt-0.5 h-4 w-4 text-amber-600" />
                   <div>
-                    <p className="font-semibold text-slate-900">{storeInfo.name}</p>
-                    <p className="mt-1 text-slate-600">Delivery reference: {storeInfo.address}</p>
-                    <p className="mt-1 text-slate-500">Pincode: {storeInfo.pincode}</p>
+                    <p className="font-semibold text-slate-900">{storeSettings.name}</p>
+                    <p className="mt-1 text-slate-600">Delivery reference: {storeSettings.address}</p>
+                    <p className="mt-1 text-slate-500">Pincode: {storeSettings.pincode}</p>
                   </div>
                 </div>
               </div>

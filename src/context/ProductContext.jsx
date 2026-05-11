@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
-import productsData from '../data/products'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { isFirebaseConfigured } from '../firebase'
+import { subscribeToProducts } from '../services/productService'
 
 const ProductContext = createContext(undefined)
 const RECENTLY_VIEWED_STORAGE_KEY = 'sole-recently-viewed-v1'
@@ -14,7 +15,34 @@ function getInitialRecentlyViewedIds() {
 }
 
 export function ProductProvider({ children }) {
-  const [products] = useState(productsData)
+  const [products, setProducts] = useState([])
+  const [productsLoading, setProductsLoading] = useState(isFirebaseConfigured)
+  const [productsError, setProductsError] = useState(
+    isFirebaseConfigured ? '' : 'Firestore is not configured.',
+  )
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) {
+      console.error('[ProductContext] Firestore is not configured.')
+      return undefined
+    }
+
+    const unsubscribe = subscribeToProducts(
+      (nextProducts) => {
+        setProducts(nextProducts)
+        setProductsLoading(false)
+        setProductsError('')
+      },
+      (err) => {
+        console.error('[ProductContext] Failed to load products', err)
+        setProducts([])
+        setProductsLoading(false)
+        setProductsError(err?.message || 'Failed to load products.')
+      },
+    )
+
+    return () => unsubscribe()
+  }, [])
 
   const getProductById = useCallback(
     (productId) => products.find((product) => String(product.id) === String(productId)),
@@ -22,7 +50,11 @@ export function ProductProvider({ children }) {
   )
 
   const getTotalStock = useCallback(
-    (product) => (product?.sizes ?? []).reduce((sum, entry) => sum + Number(entry.stock || 0), 0),
+    (product) => {
+      const sizes = product?.sizes ?? []
+      const total = sizes.reduce((sum, entry) => sum + Number(entry?.stock || 0), 0)
+      return total || Number(product?.stock || 0)
+    },
     [],
   )
 
@@ -56,10 +88,10 @@ export function ProductProvider({ children }) {
       getTotalStock,
       getRecentlyViewedProducts,
       recordRecentlyViewed,
-      productsLoading: false,
-      productsError: '',
+      productsLoading,
+      productsError,
     }),
-    [getProductById, getRecentlyViewedProducts, getTotalStock, products, recordRecentlyViewed],
+    [getProductById, getRecentlyViewedProducts, getTotalStock, products, productsError, productsLoading, recordRecentlyViewed],
   )
 
   return <ProductContext.Provider value={value}>{children}</ProductContext.Provider>

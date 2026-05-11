@@ -36,6 +36,7 @@ export default function Cart() {
   const navigate = useNavigate()
   const { cartItems, removeFromCart, updateQuantity, totalPrice } = useCart()
   const { addToWishlist } = useWishlist()
+  const safeCartItems = Array.isArray(cartItems) ? cartItems : []
   const [couponInput, setCouponInput] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState('')
   const [couponMessage, setCouponMessage] = useState('')
@@ -89,7 +90,7 @@ export default function Cart() {
     return coupon.value
   }, [appliedCoupon, totalPrice])
 
-  if (cartItems.length === 0) {
+  if (safeCartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 py-8 sm:py-12">
         <div className="mx-auto flex max-w-6xl items-center justify-center px-4">
@@ -137,7 +138,7 @@ export default function Cart() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
           <div className="space-y-4 lg:col-span-2">
-            {cartItems.map((item) => (
+            {safeCartItems.map((item) => (
               <div key={`${item.id}-${item.size ?? 'default'}`} className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:gap-4">
                 <img
                   src={item.image || fallbackImage}

@@ -71,7 +71,7 @@ function ProductCard({ product }) {
         </button>
 
         <motion.img
-          src={product.image || fallbackImage}
+          src={product.imageUrl || fallbackImage}
           alt={product.name}
           className={`ui-image-zoom h-full w-full object-cover ${isOutOfStock ? 'opacity-50' : ''}`}
           loading="lazy"

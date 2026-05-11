@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useStoreSettings } from '../context/StoreSettingsContext'
 
 function Banner() {
+  const { storeSettings } = useStoreSettings()
+  const bannerText = storeSettings.bannerText || 'Built For Speed | Styled For Streets'
+  const [bannerPrimary, bannerSecondary] = bannerText.split('|').map((segment) => segment.trim())
+
   return (
     <section className="relative overflow-hidden rounded-3xl bg-ink text-white shadow-premium">
       <div className="pointer-events-none absolute -left-20 top-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
@@ -10,8 +15,8 @@ function Banner() {
         <div className="max-w-xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300">New Season</p>
           <h1 className="font-display text-4xl font-extrabold leading-[1.03] tracking-tight sm:text-5xl lg:text-6xl">
-            Built For Speed
-            <span className="block text-slate-300">Styled For Streets</span>
+            {bannerPrimary}
+            {bannerSecondary && <span className="block text-slate-300">{bannerSecondary}</span>}
           </h1>
           <p className="mt-4 max-w-md text-sm text-slate-300 sm:text-base">
             Discover premium sneakers built for comfort, performance, and street style.

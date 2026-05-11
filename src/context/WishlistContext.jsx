@@ -6,7 +6,8 @@ const STORAGE_KEY = 'sole-wishlist-v1'
 function getInitialWishlist() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }

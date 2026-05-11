@@ -1,9 +1,19 @@
-import { motion, useScroll, useSpring, useTransform } from 'framer-motion'
+import {
+  AnimatePresence,
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FiMapPin, FiPhoneCall } from 'react-icons/fi'
 import ProductCard from '../components/ProductCard'
-import { storeInfo } from '../config/store'
+import fallbackShoe from '../assets/fallback-shoe.svg'
+import { useStoreSettings } from '../context/StoreSettingsContext'
 import { useProducts } from '../context/ProductContext'
 import { formatCurrency } from '../lib/currency'
 import { REVIEWS_STORAGE_KEY, getReviews } from '../lib/reviews'
@@ -31,6 +41,54 @@ const softReveal = {
     scale: 1,
     transition: {
       duration: 0.75,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+}
+
+const luxeCardReveal = {
+  hidden: { opacity: 0, y: 48, scale: 0.95 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.9,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+}
+
+const luxeTextReveal = {
+  hidden: { opacity: 0, y: 18 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+}
+
+const luxeWordStagger = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.08,
+    },
+  },
+}
+
+const luxeWordReveal = {
+  hidden: { opacity: 0, y: 14, filter: 'blur(6px)' },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: {
+      duration: 0.55,
       ease: [0.22, 1, 0.36, 1],
     },
   },
@@ -147,17 +205,294 @@ function FeaturedCarousel({ products }) {
   )
 }
 
+function CategoryCard({ category, index }) {
+  const cardRef = useRef(null)
+  const prefersReducedMotion = useReducedMotion()
+  const rotateX = useMotionValue(0)
+  const rotateY = useMotionValue(0)
+  const glowX = useMotionValue(50)
+  const glowY = useMotionValue(50)
+  const rotateXSpring = useSpring(rotateX, { stiffness: 120, damping: 18, mass: 0.4 })
+  const rotateYSpring = useSpring(rotateY, { stiffness: 120, damping: 18, mass: 0.4 })
+  const glowXSpring = useSpring(glowX, { stiffness: 80, damping: 20, mass: 0.3 })
+  const glowYSpring = useSpring(glowY, { stiffness: 80, damping: 20, mass: 0.3 })
+  const imageX = useTransform(rotateYSpring, [-10, 10], [-12, 12])
+  const imageY = useTransform(rotateXSpring, [-10, 10], [10, -10])
+  const glow = useMotionTemplate`radial-gradient(circle at ${glowXSpring}% ${glowYSpring}%, rgba(255,255,255,0.35), transparent 48%)`
+  const titleWords = category.title.split(' ')
+  const idleAnimation = prefersReducedMotion
+    ? {}
+    : {
+        y: [0, -8, 0],
+        rotateZ: [0, 0.6, 0],
+      }
+  const idleTransition = prefersReducedMotion
+    ? {}
+    : {
+        duration: 8 + index,
+        repeat: Infinity,
+        ease: 'easeInOut',
+        delay: index * 0.6,
+      }
+
+  const handleMouseMove = (event) => {
+    if (!cardRef.current || prefersReducedMotion) return
+
+    const rect = cardRef.current.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    const xPercent = (x / rect.width) * 100
+    const yPercent = (y / rect.height) * 100
+    const rotateXValue = ((y - rect.height / 2) / rect.height) * -12
+    const rotateYValue = ((x - rect.width / 2) / rect.width) * 12
+
+    rotateX.set(rotateXValue)
+    rotateY.set(rotateYValue)
+    glowX.set(xPercent)
+    glowY.set(yPercent)
+  }
+
+  const handleMouseLeave = () => {
+    rotateX.set(0)
+    rotateY.set(0)
+    glowX.set(50)
+    glowY.set(50)
+  }
+
+  return (
+    <motion.article
+      ref={cardRef}
+      variants={luxeCardReveal}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      animate={idleAnimation}
+      transition={idleTransition}
+      whileHover={{ y: -18, scale: 1.03, rotateX: 3, rotateY: -3 }}
+      style={{ rotateX: rotateXSpring, rotateY: rotateYSpring, transformStyle: 'preserve-3d' }}
+      className={`group relative overflow-hidden rounded-[2.6rem] border border-white/20 bg-slate-950 text-white shadow-[0_45px_120px_-70px_rgba(15,23,42,0.9)] ring-1 ring-white/10 transition-all duration-500 hover:z-10 hover:border-white/35 hover:shadow-[0_70px_150px_-65px_rgba(15,23,42,0.95)] ${category.layout} transform-gpu`}
+    >
+      <motion.div
+        className="absolute inset-0 opacity-70"
+        style={{ backgroundImage: glow }}
+      />
+      <motion.img
+        src={category.image}
+        alt={category.name}
+        className="absolute inset-0 h-full w-full object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:brightness-110 group-hover:saturate-110"
+        initial={{ opacity: 0, y: 24, scale: 0.94 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={viewportSettings}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        animate={prefersReducedMotion ? undefined : { scale: [1.04, 1.1, 1.04] }}
+        style={{ x: imageX, y: imageY }}
+      />
+      <motion.div
+        className="absolute inset-0"
+        animate={
+          prefersReducedMotion
+            ? undefined
+            : { opacity: [0.3, 0.55, 0.3] }
+        }
+        transition={
+          prefersReducedMotion
+            ? undefined
+            : { duration: 6, repeat: Infinity, ease: 'easeInOut' }
+        }
+        style={{
+          backgroundImage:
+            'linear-gradient(120deg, rgba(255,255,255,0.18), transparent 55%, rgba(255,255,255,0.08))',
+          backgroundSize: '200% 200%',
+        }}
+      />
+      <div className={`absolute inset-0 bg-gradient-to-b ${category.accent} opacity-70 transition-opacity duration-500 group-hover:opacity-85`} />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(251,191,36,0.24),_transparent_40%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,_rgba(255,255,255,0.18),_transparent_40%)] opacity-80" />
+      <div className="absolute inset-0 rounded-[2.6rem] border border-white/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="pointer-events-none absolute inset-3 rounded-[2rem] border border-white/10 bg-white/5 opacity-0 backdrop-blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
+
+      {[0, 1, 2, 3, 4].map((particle) => (
+        <motion.span
+          key={`${category.name}-particle-${particle}`}
+          className="absolute h-1.5 w-1.5 rounded-full bg-white/70"
+          style={{
+            left: `${18 + particle * 16}%`,
+            top: `${20 + particle * 10}%`,
+          }}
+          animate={
+            prefersReducedMotion
+              ? undefined
+              : {
+                  y: [0, -12, 0],
+                  opacity: [0.3, 0.8, 0.3],
+                }
+          }
+          transition={
+            prefersReducedMotion
+              ? undefined
+              : {
+                  duration: 5 + particle,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: particle * 0.6,
+                }
+          }
+        />
+      ))}
+
+      <div className="relative flex min-h-[24rem] flex-col justify-end p-7 sm:min-h-[28rem] sm:p-8 lg:min-h-[33rem]">
+        <motion.div
+          variants={luxeTextReveal}
+          className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-200 shadow-[0_0_18px_rgba(251,191,36,0.35)] backdrop-blur"
+          animate={
+            prefersReducedMotion
+              ? undefined
+              : { boxShadow: ['0 0 12px rgba(251,191,36,0.2)', '0 0 26px rgba(251,191,36,0.55)', '0 0 12px rgba(251,191,36,0.2)'] }
+          }
+          transition={
+            prefersReducedMotion
+              ? undefined
+              : { duration: 4, repeat: Infinity, ease: 'easeInOut' }
+          }
+        >
+          {category.name}
+        </motion.div>
+        <motion.h3
+          variants={luxeWordStagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={viewportSettings}
+          className="mt-5 font-display text-4xl font-extrabold leading-tight text-white sm:text-5xl"
+        >
+          {titleWords.map((word, wordIndex) => (
+            <motion.span
+              key={`${category.name}-word-${wordIndex}`}
+              variants={luxeWordReveal}
+              className="mr-2 inline-block"
+            >
+              {word}
+            </motion.span>
+          ))}
+        </motion.h3>
+        <motion.p
+          variants={luxeTextReveal}
+          className="mt-4 max-w-sm text-sm font-medium leading-7 text-slate-200"
+        >
+          {category.description}
+        </motion.p>
+        <motion.div variants={luxeTextReveal} className="mt-8 flex flex-wrap items-center gap-3">
+          <Link
+            to={category.href}
+            className="group/cta relative inline-flex items-center gap-3 overflow-hidden rounded-full border border-white/20 bg-white/10 px-6 py-3 text-xs font-bold uppercase tracking-[0.24em] text-white shadow-[0_18px_40px_-22px_rgba(255,255,255,0.75)] backdrop-blur transition-all duration-300 hover:scale-[1.03] hover:border-white/40 hover:bg-white/20"
+          >
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/40 via-white/10 to-transparent transition-transform duration-500 group-hover/cta:translate-x-0" />
+            <span className="absolute inset-0 scale-0 rounded-full bg-white/20 opacity-0 transition-all duration-300 group-active/cta:scale-100 group-active/cta:opacity-100" />
+            <span className="relative">Explore {category.name}</span>
+            <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 group-hover/cta:translate-x-1 group-active/cta:scale-110">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+                <path d="M13 6l6 6-6 6" />
+              </svg>
+            </span>
+          </Link>
+          <Link
+            to={category.href}
+            className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-200 transition-all duration-300 hover:text-white"
+          >
+            Shop now
+          </Link>
+        </motion.div>
+      </div>
+    </motion.article>
+  )
+}
+
 function Home() {
   const { products, productsLoading, productsError, getRecentlyViewedProducts } = useProducts()
+  const { storeSettings } = useStoreSettings()
   const heroRef = useRef(null)
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0)
 
-  const featuredProducts = products.slice(0, 4)
-  const trendingProducts = [...products]
-    .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
-    .slice(0, 4)
-  const heroProduct = featuredProducts[0] ?? products[0]
+  const featuredSelections = products.filter((product) => product.featured)
+  const featuredProducts = (featuredSelections.length ? featuredSelections : products).slice(0, 4)
+  const trendingSelections = products.filter((product) => product.trending)
+  const trendingProducts = (trendingSelections.length
+    ? trendingSelections
+    : [...products].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
+  ).slice(0, 4)
+  const heroSlides = (() => {
+    const seen = new Set()
+    const pool = [...featuredSelections, ...trendingSelections, ...products]
+      .filter((product) => {
+        if (!product) return false
+        const id = String(product.id ?? '')
+        if (!id || seen.has(id)) return false
+        seen.add(id)
+        return true
+      })
+      .slice(0, 4)
+
+    if (pool.length) {
+      return pool.map((product, index) => ({
+        id: `hero-${product.id}`,
+        name: product.name ?? 'Signature Pair',
+        description:
+          product.description ??
+          'An elevated everyday sneaker built for comfort, clean lines, and confident movement.',
+        price: product.price,
+        image: product.imageUrl || product.image || product.images?.[0] || fallbackShoe,
+        eyebrow: index === 0 ? 'New Season' : 'Featured Drop',
+        tag: product.category || 'Premium',
+        subtitle: product.brand ? `${product.brand} edition` : 'Curated performance and street icons',
+      }))
+    }
+
+    return [
+      {
+        id: 'hero-fallback-1',
+        name: `${storeSettings.name} Select`,
+        description: 'A premium everyday sneaker with a clean silhouette and all-day cushioning.',
+        price: 1499,
+        image: fallbackShoe,
+        eyebrow: 'New Season',
+        tag: 'Premium',
+        subtitle: 'Curated performance and street icons',
+      },
+      {
+        id: 'hero-fallback-2',
+        name: 'City Glide Runner',
+        description: 'Lightweight uppers with a cushioned ride built for long urban days.',
+        price: 1299,
+        image: fallbackShoe,
+        eyebrow: 'Featured Drop',
+        tag: 'Lifestyle',
+        subtitle: 'City-ready essentials',
+      },
+      {
+        id: 'hero-fallback-3',
+        name: 'Momentum Street Pro',
+        description: 'Bold traction and breathable comfort for performance-driven routines.',
+        price: 1599,
+        image: fallbackShoe,
+        eyebrow: 'Performance',
+        tag: 'Sports',
+        subtitle: 'Built for high-output days',
+      },
+    ]
+  })()
+  const activeHero = heroSlides[activeHeroIndex] ?? heroSlides[0]
+  const heroImage = activeHero?.image || fallbackShoe
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(
-    `${storeInfo.address} ${storeInfo.pincode}`,
+    `${storeSettings.address} ${storeSettings.pincode}`,
   )}&output=embed`
 
   const { scrollYProgress: heroScrollProgress } = useScroll({
@@ -185,7 +520,10 @@ function Home() {
       title: 'Sharp silhouettes for office hours and dressed-up evenings.',
       description:
         'Polished textures, refined comfort, and versatile pairs that hold their own from weekday meetings to weekend events.',
-      image: products.find((product) => product.category === 'Formal')?.image ?? heroProduct?.image,
+      image:
+        products.find((product) => product.category === 'Formal')?.imageUrl ||
+        products.find((product) => product.category === 'Formal')?.image ||
+        heroImage,
       href: '/shop?category=Formal',
       accent: 'from-slate-950/92 via-slate-900/48 to-transparent',
       layout: 'lg:col-span-5',
@@ -195,7 +533,10 @@ function Home() {
       title: 'Relaxed essentials built for everyday movement.',
       description:
         'Soft cushioning, lightweight uppers, and effortless styling for long city days, easy travel, and off-duty looks.',
-      image: products.find((product) => product.category === 'Casual')?.image ?? heroProduct?.image,
+      image:
+        products.find((product) => product.category === 'Casual')?.imageUrl ||
+        products.find((product) => product.category === 'Casual')?.image ||
+        heroImage,
       href: '/shop?category=Casual',
       accent: 'from-amber-900/88 via-amber-600/32 to-transparent',
       layout: 'lg:col-span-3',
@@ -205,7 +546,10 @@ function Home() {
       title: 'Performance-first footwear engineered to keep pace.',
       description:
         'Breathable construction, responsive support, and bold energy for training sessions, fast runs, and high-output routines.',
-      image: products.find((product) => product.category === 'Sports')?.image ?? heroProduct?.image,
+      image:
+        products.find((product) => product.category === 'Sports')?.imageUrl ||
+        products.find((product) => product.category === 'Sports')?.image ||
+        heroImage,
       href: '/shop?category=Sports',
       accent: 'from-emerald-950/88 via-emerald-700/30 to-transparent',
       layout: 'lg:col-span-4',
@@ -255,6 +599,22 @@ function Home() {
   }, [products])
 
   useEffect(() => {
+    if (heroSlides.length <= 1) return undefined
+
+    const intervalId = window.setInterval(() => {
+      setActiveHeroIndex((prev) => (prev + 1) % heroSlides.length)
+    }, 6200)
+
+    return () => window.clearInterval(intervalId)
+  }, [heroSlides.length])
+
+  useEffect(() => {
+    if (activeHeroIndex >= heroSlides.length) {
+      setActiveHeroIndex(0)
+    }
+  }, [activeHeroIndex, heroSlides.length])
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined
 
     const handleReviewUpdate = () => {
@@ -278,9 +638,9 @@ function Home() {
   const fallbackTestimonials = [
     {
       id: 'empty-reviews',
-      name: storeInfo.name,
+      name: storeSettings.name,
       role: 'Customer Reviews',
-      product: heroProduct?.name ?? 'Signature Pair',
+      product: activeHero?.name ?? 'Signature Pair',
       quote: 'No reviews yet. Be the first to review!',
       verified: false,
       rating: 0,
@@ -292,6 +652,16 @@ function Home() {
     : fallbackTestimonials
 
   const totalTestimonials = displayTestimonials.length
+
+  const handlePrevHero = () => {
+    if (heroSlides.length <= 1) return
+    setActiveHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)
+  }
+
+  const handleNextHero = () => {
+    if (heroSlides.length <= 1) return
+    setActiveHeroIndex((prev) => (prev + 1) % heroSlides.length)
+  }
 
   useEffect(() => {
     if (totalTestimonials <= 1) return undefined
@@ -322,15 +692,19 @@ function Home() {
   return (
     <div id="top" className="bg-transparent">
       <section ref={heroRef} className="relative isolate min-h-screen overflow-hidden bg-slate-950 text-white">
-        <motion.img
-          src={heroProduct?.image}
-          alt={heroProduct?.name ?? 'Hero shoe'}
-          className="absolute inset-0 h-[112%] w-full object-cover will-change-transform"
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
-          style={{ y: heroParallaxY }}
-        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={activeHero?.id}
+            src={heroImage}
+            alt={activeHero?.name ?? 'Hero shoe'}
+            className="absolute inset-0 h-[112%] w-full object-cover will-change-transform"
+            initial={{ opacity: 0, scale: 1.06 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+            style={{ y: heroParallaxY }}
+          />
+        </AnimatePresence>
         <motion.div
           style={{ opacity: heroOverlayOpacity }}
           className="absolute inset-0 bg-[linear-gradient(110deg,_rgba(2,6,23,0.9)_0%,_rgba(15,23,42,0.72)_38%,_rgba(15,23,42,0.32)_65%,_rgba(2,6,23,0.78)_100%)]"
@@ -353,9 +727,9 @@ function Home() {
           >
             <div className="max-w-4xl">
               <motion.div variants={softReveal} className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-200 backdrop-blur-xl">
-                New Season
+                {activeHero?.eyebrow ?? 'New Season'}
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                Curated performance and street icons
+                {activeHero?.subtitle ?? 'Curated performance and street icons'}
               </motion.div>
 
               <motion.h1 variants={revealUp} className="mt-7 max-w-4xl font-display text-6xl font-extrabold leading-[0.9] tracking-tight text-white sm:text-7xl lg:text-[7.5rem]">
@@ -363,8 +737,8 @@ function Home() {
               </motion.h1>
 
               <motion.p variants={softReveal} className="mt-6 max-w-2xl text-base font-medium leading-8 text-slate-200 sm:text-lg">
-                Discover premium sneakers and everyday essentials designed to move with confidence,
-                comfort, and the kind of bold visual energy you expect from world-class sportswear brands.
+                {activeHero?.description ??
+                  'Discover premium sneakers and everyday essentials designed to move with confidence, comfort, and bold visual energy.'}
               </motion.p>
 
               <motion.div variants={softReveal} className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -388,23 +762,65 @@ function Home() {
                   </span>
                 </motion.a>
               </motion.div>
+
+              <motion.div variants={softReveal} className="mt-10 flex flex-wrap items-center gap-3">
+                {heroSlides.map((slide, index) => (
+                  <button
+                    key={slide.id}
+                    type="button"
+                    onClick={() => setActiveHeroIndex(index)}
+                    className={`group relative h-12 w-12 overflow-hidden rounded-full border transition-all duration-300 ${
+                      index === activeHeroIndex
+                        ? 'border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.55)]'
+                        : 'border-white/20 hover:border-white/50'
+                    }`}
+                    aria-label={`View ${slide.name}`}
+                  >
+                    <img
+                      src={slide.image}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  </button>
+                ))}
+              </motion.div>
             </div>
 
             <motion.div variants={softReveal} className="flex items-end lg:justify-end">
               <div className="ui-card-lift w-full max-w-xs rounded-[2rem] border border-white/12 bg-white/10 p-5 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">Featured Drop</p>
-                <p className="mt-3 font-display text-3xl font-bold text-white">{heroProduct?.name}</p>
-                <p className="mt-3 text-sm font-medium leading-7 text-slate-300">{heroProduct?.description}</p>
+                <p className="mt-3 font-display text-3xl font-bold text-white">{activeHero?.name}</p>
+                <p className="mt-3 text-sm font-medium leading-7 text-slate-300">{activeHero?.description}</p>
                 <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Starting at</p>
                     <p className="mt-1 text-lg font-bold text-white">
-                      {heroProduct ? formatCurrency(heroProduct.price) : ''}
+                      {activeHero?.price ? formatCurrency(activeHero.price) : ''}
                     </p>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-white">
-                    Premium
+                    {activeHero?.tag ?? 'Premium'}
                   </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
+                  <button
+                    type="button"
+                    onClick={handlePrevHero}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 transition hover:border-white/30 hover:bg-white/10"
+                  >
+                    Prev
+                  </button>
+                  <span>
+                    {activeHeroIndex + 1} / {heroSlides.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleNextHero}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 transition hover:border-white/30 hover:bg-white/10"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -472,35 +888,8 @@ function Home() {
             variants={staggerGrid}
             className="mt-12 grid gap-6 lg:grid-cols-12"
           >
-            {categories.map((category) => (
-              <motion.article
-                key={category.name}
-                variants={softReveal}
-                className={`group ui-card-lift relative overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-[0_30px_70px_-35px_rgba(15,23,42,0.65)] ${category.layout}`}
-              >
-                <motion.img
-                  src={category.image}
-                  alt={category.name}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-                  initial={{ opacity: 0, y: 24, scale: 0.94 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={viewportSettings}
-                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                />
-                <div className={`absolute inset-0 bg-gradient-to-b ${category.accent}`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                <div className="relative flex min-h-[24rem] flex-col justify-end p-7 sm:min-h-[28rem] sm:p-8 lg:min-h-[33rem]">
-                  <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-200">{category.name}</p>
-                  <h3 className="mt-4 font-display text-3xl font-bold leading-tight text-white">{category.title}</h3>
-                  <p className="mt-4 max-w-sm text-sm font-medium leading-7 text-slate-200">{category.description}</p>
-                  <Link
-                    to={category.href}
-                    className="ui-button-light relative z-20 mt-7 inline-flex w-fit items-center px-5 py-3 text-sm font-bold"
-                  >
-                    Explore {category.name}
-                  </Link>
-                </div>
-              </motion.article>
+            {categories.map((category, index) => (
+              <CategoryCard key={category.name} category={category} index={index} />
             ))}
           </motion.div>
         </div>
@@ -625,7 +1014,7 @@ function Home() {
             <div className="space-y-8">
               <SectionIntro
                 eyebrow="Contact Us"
-                title={`Visit ${storeInfo.name} or call for assistance.`}
+                title={`Visit ${storeSettings.name} or call for assistance.`}
                 description="Reach our team for sizing, delivery details, or pickup guidance."
               />
               <div className="grid gap-4 sm:grid-cols-2">
@@ -636,8 +1025,8 @@ function Home() {
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Store address</p>
-                      <p className="mt-2 text-sm text-slate-600">{storeInfo.address}</p>
-                      <p className="mt-2 text-sm font-semibold text-slate-700">Pincode: {storeInfo.pincode}</p>
+                      <p className="mt-2 text-sm text-slate-600">{storeSettings.address}</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-700">Pincode: {storeSettings.pincode}</p>
                     </div>
                   </div>
                 </div>
@@ -648,11 +1037,11 @@ function Home() {
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Call us</p>
-                      <a href={`tel:${storeInfo.phone}`} className="mt-2 block text-sm font-medium text-slate-600 transition hover:text-slate-900">
-                        {storeInfo.phone}
+                      <a href={`tel:${storeSettings.phone}`} className="mt-2 block text-sm font-medium text-slate-600 transition hover:text-slate-900">
+                        {storeSettings.phone}
                       </a>
-                      <a href={`tel:${storeInfo.alternate}`} className="mt-1 block text-sm font-medium text-slate-600 transition hover:text-slate-900">
-                        {storeInfo.alternate}
+                      <a href={`tel:${storeSettings.alternate}`} className="mt-1 block text-sm font-medium text-slate-600 transition hover:text-slate-900">
+                        {storeSettings.alternate}
                       </a>
                     </div>
                   </div>
@@ -662,7 +1051,7 @@ function Home() {
 
             <div className="overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-premium">
               <iframe
-                title={`${storeInfo.name} map`}
+                title={`${storeSettings.name} map`}
                 src={mapSrc}
                 className="h-80 w-full sm:h-[22rem] lg:h-full"
                 loading="lazy"

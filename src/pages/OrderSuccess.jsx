@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { FiMapPin, FiPhoneCall } from 'react-icons/fi'
-import { storeInfo } from '../config/store'
+import { useStoreSettings } from '../context/StoreSettingsContext'
 import { formatCurrency } from '../lib/currency'
 import { getCurrentOrder } from '../lib/orders'
 
@@ -9,6 +9,7 @@ function OrderSuccess() {
   const location = useLocation()
   const navigate = useNavigate()
   const [order, setOrder] = useState(null)
+  const { storeSettings } = useStoreSettings()
 
   useEffect(() => {
     const currentOrder = getCurrentOrder()
@@ -49,7 +50,7 @@ function OrderSuccess() {
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-600">Order Placed</p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Your order is confirmed</h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Thank you for shopping at {storeInfo.name}. Your order has been saved and your shoes are now on the way to being packed.
+              Thank you for shopping at {storeSettings.name}. Your order has been saved and your shoes are now on the way to being packed.
             </p>
           </div>
 
@@ -94,11 +95,11 @@ function OrderSuccess() {
                 <FiPhoneCall className="mt-0.5 h-4 w-4" />
                 <div>
                   <p className="font-semibold">Call us</p>
-                  <a href={`tel:${storeInfo.phone}`} className="block text-emerald-900 transition hover:text-emerald-700">
-                    {storeInfo.phone}
+                  <a href={`tel:${storeSettings.phone}`} className="block text-emerald-900 transition hover:text-emerald-700">
+                    {storeSettings.phone}
                   </a>
-                  <a href={`tel:${storeInfo.alternate}`} className="block text-emerald-900 transition hover:text-emerald-700">
-                    {storeInfo.alternate}
+                  <a href={`tel:${storeSettings.alternate}`} className="block text-emerald-900 transition hover:text-emerald-700">
+                    {storeSettings.alternate}
                   </a>
                 </div>
               </div>
@@ -106,7 +107,7 @@ function OrderSuccess() {
                 <FiMapPin className="mt-0.5 h-4 w-4" />
                 <div>
                   <p className="font-semibold">Visit the store</p>
-                  <p>{storeInfo.address}</p>
+                  <p>{storeSettings.address}</p>
                 </div>
               </div>
             </div>

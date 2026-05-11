@@ -24,6 +24,15 @@ function ProductCardSkeleton() {
   )
 }
 
+function LoadingSpinner() {
+  return (
+    <div className="mb-5 flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+      Loading products...
+    </div>
+  )
+}
+
 function Shop() {
   const { products, productsLoading, productsError } = useProducts()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -139,7 +148,7 @@ function Shop() {
       if (sortBy === 'price-asc') return a.price - b.price
       if (sortBy === 'price-desc') return b.price - a.price
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
-      return Number(b.id) - Number(a.id)
+      return (b.createdAtMs || 0) - (a.createdAtMs || 0)
     })
   }, [normalizedSearch, products, selectedFilters, sortBy])
 
@@ -220,11 +229,14 @@ function Shop() {
           )}
 
           {productsLoading ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <ProductCardSkeleton key={index} />
-              ))}
-            </div>
+            <>
+              <LoadingSpinner />
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <ProductCardSkeleton key={index} />
+                ))}
+              </div>
+            </>
           ) : (
             <>
               <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">

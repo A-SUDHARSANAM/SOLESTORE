@@ -15,7 +15,7 @@ import { saveReview } from '../lib/reviews'
 function ProductDetails() {
   const { id } = useParams()
   const { addToCart } = useCart()
-  const { getProductById, recordRecentlyViewed } = useProducts()
+  const { getProductById, productsLoading, recordRecentlyViewed } = useProducts()
   const { isWishlisted, toggleWishlist } = useWishlist()
   const product = getProductById(id)
   const { reviews, reviewCount, averageRating, hasReviewed } = useProductReviews(id)
@@ -23,12 +23,32 @@ function ProductDetails() {
   const [selectedRating, setSelectedRating] = useState(0)
   const [comment, setComment] = useState('')
   const [formError, setFormError] = useState('')
+  const orders = useMemo(() => getOrders(), [])
+  const hasPurchased = useMemo(
+    () =>
+      orders.some((order) =>
+        order.items?.some(
+          (item) =>
+            String(item.productId ?? item.id) === String(product?.id),
+        ),
+      ),
+    [orders, product?.id],
+  )
 
   useEffect(() => {
     if (product) {
       recordRecentlyViewed(product.id)
     }
   }, [product, recordRecentlyViewed])
+
+  if (productsLoading) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+        <div className="mx-auto flex h-12 w-12 animate-spin items-center justify-center rounded-full border-4 border-slate-200 border-t-slate-900" />
+        <p className="mt-4 text-sm font-semibold text-slate-600">Loading product...</p>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
@@ -41,23 +61,12 @@ function ProductDetails() {
     )
   }
 
-  const gallery = product.images?.length ? product.images : [product.image]
+  const gallery = product.images?.length ? product.images : [product.imageUrl || product.image]
   const wishlisted = isWishlisted(product.id)
   const fallbackImage = fallbackShoe
 
   const originalPrice = product.originalPrice || Math.round(product.price * 1.25)
   const discount = product.discount || 20
-  const orders = useMemo(() => getOrders(), [])
-  const hasPurchased = useMemo(
-    () =>
-      orders.some((order) =>
-        order.items?.some(
-          (item) =>
-            String(item.productId ?? item.id) === String(product.id),
-        ),
-      ),
-    [orders, product.id],
-  )
   const canWriteReview = hasPurchased && !hasReviewed
   const reviewSummaryLabel = reviewCount
     ? `${averageRating} ★ (${reviewCount} review${reviewCount > 1 ? 's' : ''})`
@@ -172,7 +181,7 @@ function ProductDetails() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm font-semibold text-slate-900">Demo store note</p>
             <p className="mt-1 text-sm text-slate-600">
-              This product uses static frontend data. Cart, wishlist, checkout, and order status are saved in your browser.
+              Product details sync from Firestore in real time. Cart, wishlist, checkout, and order status are still saved in your browser.
             </p>
           </div>
 
