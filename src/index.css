@@ -19,8 +19,7 @@
     margin: 0;
     min-height: 100vh;
     background:
-      radial-gradient(circle at 18% -10%, rgba(17, 19, 24, 0.1), transparent 35%),
-      radial-gradient(circle at 100% 20%, rgba(219, 167, 92, 0.2), transparent 30%),
+      linear-gradient(135deg, rgba(245, 247, 250, 0.95), rgba(255, 248, 240, 0.85), rgba(250, 250, 255, 0.9)),
       #f7f8fa;
     color: #111318;
     font-family: 'Manrope', system-ui, sans-serif;
@@ -44,7 +43,7 @@
   }
 
   .ui-button-primary {
-    @apply ui-button bg-slate-950 text-white hover:bg-black;
+    @apply ui-button bg-gradient-to-r from-slate-950 via-slate-900 to-amber-700 text-white shadow-lg shadow-amber-900/10 hover:from-black hover:via-slate-950 hover:to-amber-800 hover:shadow-amber-700/25;
   }
 
   .ui-button-light {
@@ -52,7 +51,48 @@
   }
 
   .ui-button-outline {
-    @apply ui-button border border-slate-300 bg-white text-slate-900 hover:border-slate-400 hover:bg-slate-50;
+    @apply ui-button border border-white/70 bg-white/70 text-slate-900 shadow-sm backdrop-blur-md hover:border-slate-300 hover:bg-white;
+  }
+
+  .glass-card {
+    @apply border border-white/30 bg-white/25 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-blur-[18px] transition-all duration-300;
+  }
+
+  .glass-panel {
+    @apply border border-white/25 bg-white/[0.18] shadow-[0_18px_55px_rgba(5,11,37,0.08)] backdrop-blur-[25px];
+  }
+
+  .glass-navbar {
+    @apply border-b border-white/25 bg-white/[0.18] shadow-sm backdrop-blur-[20px];
+  }
+
+  .gradient-dashboard {
+    background:
+      linear-gradient(
+        135deg,
+        rgba(245, 247, 250, 0.95),
+        rgba(255, 248, 240, 0.85),
+        rgba(250, 250, 255, 0.9)
+      );
+  }
+
+  .gradient-blob {
+    @apply pointer-events-none absolute rounded-full blur-3xl;
+    animation: float-gradient 18s ease-in-out infinite;
+  }
+
+  .gradient-blob-orange {
+    @apply -right-20 top-20 h-72 w-72 bg-orange-300/25 sm:h-96 sm:w-96;
+  }
+
+  .gradient-blob-beige {
+    @apply -left-24 top-[32rem] h-72 w-72 bg-amber-100/60 sm:h-[28rem] sm:w-[28rem];
+    animation-delay: -6s;
+  }
+
+  .gradient-blob-white {
+    @apply bottom-32 left-1/2 h-64 w-64 -translate-x-1/2 bg-white/70 sm:h-80 sm:w-80;
+    animation-delay: -12s;
   }
 
   .ui-card-lift {
@@ -74,5 +114,22 @@
 
   .section-heading {
     @apply font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl;
+  }
+}
+
+@keyframes float-gradient {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(18px, -22px, 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-blob {
+    animation: none;
   }
 }

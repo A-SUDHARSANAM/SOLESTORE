@@ -6,6 +6,7 @@ import { useWishlist } from '../context/WishlistContext'
 import { useProductReviews } from '../hooks/useProductReviews'
 import fallbackShoe from '../assets/fallback-shoe.svg'
 import { formatCurrency } from '../lib/currency'
+import GlassCard from './GlassCard'
 
 function ProductCard({ product }) {
   const { addToCart } = useCart()
@@ -43,11 +44,12 @@ function ProductCard({ product }) {
   }
 
   return (
-    <Link
+    <GlassCard
+      as={Link}
       to={`/product/${product.id}`}
-      className="group ui-card-lift relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-lg shadow-slate-900/10"
+      className="group ui-card-lift relative flex h-full flex-col overflow-hidden rounded-2xl"
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50">
+      <div className="relative m-3 aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 via-white to-amber-50">
         {/* Out of Stock Overlay */}
         {isOutOfStock && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[2px]">
@@ -61,7 +63,7 @@ function ProductCard({ product }) {
           type="button"
           onClick={handleToggleWishlist}
           aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-          className={`absolute right-3 top-3 z-30 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-lg shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-md ${
+          className={`absolute right-3 top-3 z-30 grid h-9 w-9 place-items-center rounded-full border border-white/40 bg-white/50 text-lg shadow-sm backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white/80 hover:shadow-md ${
             wishlisted
               ? 'text-red-500 hover:text-red-600'
               : 'text-gray-400 hover:text-red-500'
@@ -88,7 +90,7 @@ function ProductCard({ product }) {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="ui-button-primary w-full rounded-xl bg-slate-900/95 px-4 py-3 text-sm font-bold text-white shadow-lg backdrop-blur-sm"
+              className="ui-button-primary w-full rounded-xl px-4 py-3 text-sm font-bold text-white"
             >
               Quick Add to Cart
             </button>
@@ -96,7 +98,7 @@ function ProductCard({ product }) {
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col border-t border-white/30 bg-white/10 p-5">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
@@ -104,7 +106,7 @@ function ProductCard({ product }) {
             </p>
             <h3 className="mt-1.5 font-display text-lg font-bold text-gray-900 line-clamp-1">{product.name}</h3>
           </div>
-          <div className="flex items-center gap-1 rounded-md bg-green-50 px-1.5 py-1">
+          <div className="flex items-center gap-1 rounded-md border border-white/40 bg-white/35 px-1.5 py-1 backdrop-blur-md">
             <span className="text-xs font-bold text-green-700">{rating}</span>
             <span className="text-[10px] text-green-600">★</span>
           </div>
@@ -130,7 +132,7 @@ function ProductCard({ product }) {
           </div>
         </div>
       </div>
-    </Link>
+    </GlassCard>
   )
 }
 
